@@ -59,33 +59,33 @@ Freelance OS is designed specifically for creative technologists, designers, sof
 
 ```mermaid
 graph TD
-    subgraph UI_Shell [UI & Presentation Shell]
-        Shell[Shell Container]
-        NavBar[HustlerNavBar + Magic Raised Button]
-        SubMenu[Bottom Bar Sub-Menu]
-        Home[Home Tab + Top Search & Filter Bar]
-        Projects[Projects Tab]
-        Docs[Docs Tab: Invoices & Quotes]
-        Clients[Clients Tab]
-        Magic[Magic AI Scratchpad]
-        Services[Service Catalogue Page]
-        FollowUps[Follow-up Reminders Page]
-        Timeline[Client Timeline Page]
-        Payments[Payment Tracking Page]
+    subgraph UI_Shell["UI and Presentation Shell"]
+        Shell["Shell Container"]
+        NavBar["HustlerNavBar and Bottom Menu"]
+        SubMenu["Integrated Workspace Sub-Menu"]
+        Home["Home Tab with Universal Search"]
+        Projects["Projects Tab"]
+        Docs["Docs Tab: Invoices and Quotes"]
+        Clients["Clients Tab"]
+        Magic["Magic AI Scratchpad"]
+        Services["Service Catalogue Page"]
+        FollowUps["Follow-up Reminders Page"]
+        Timeline["Client Timeline Page"]
+        Payments["Payment Tracking Page"]
     end
 
-    subgraph State_Management [State Management Layer]
-        NavController[NavController: Tab Transitions]
-        Store[Store: ChangeNotifier Central State]
-        ModelDownloads[ModelDownloads: Background AI Engine]
+    subgraph State_Management["State Management Layer"]
+        NavController["NavController: Tab Transitions"]
+        Store["Store: Central State ChangeNotifier"]
+        ModelDownloads["ModelDownloads: Background AI Engine"]
     end
 
-    subgraph Storage_Data [Storage & Engine Layer]
-        LocalFile[(freelance_os.json Local Storage)]
-        SecureStorage[(FlutterSecureStorage: Encrypted Keys)]
-        RemoteMongo[(MongoDB TLS Cloud Backup)]
-        PdfEngine[PdfPreview & Printing Engine]
-        GemmaEngine[FlutterGemma On-Device LLM]
+    subgraph Storage_Data["Storage and Engine Layer"]
+        LocalFile[("Local JSON File Storage")]
+        SecureStorage[("FlutterSecureStorage: Encrypted Keys")]
+        RemoteMongo[("MongoDB TLS Cloud Backup")]
+        PdfEngine["PdfPreview and Printing Engine"]
+        GemmaEngine["FlutterGemma On-Device LLM"]
     end
 
     Shell --> NavBar
@@ -166,7 +166,7 @@ erDiagram
         string status
         double budget
         double spent
-        datetime deadline
+        string deadline
     }
 
     DOC {
@@ -177,8 +177,8 @@ erDiagram
         string projectId FK
         string convertedToId FK
         string status
-        datetime date
-        datetime due
+        string issueDate
+        string dueDate
         double taxPct
         double discount
     }
@@ -186,7 +186,7 @@ erDiagram
     PAYMENT_RECORD {
         string id PK
         double amount
-        datetime date
+        string paymentDate
         string method
         string reference
         string notes
@@ -196,15 +196,15 @@ erDiagram
         string id PK
         string clientId FK
         string text
-        string type
-        datetime date
+        string noteCategory
+        string createdAt
     }
 
     FOLLOW_UP_RECORD {
         string id PK
         string docId FK
         string clientId FK
-        datetime date
+        string followUpDate
         string channel
         string notes
     }
@@ -217,22 +217,22 @@ erDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> Quotation_Draft : Create Quote
-    Quotation_Draft --> Quotation_Sent : Share PDF / Send
+    Quotation_Draft --> Quotation_Sent : Send or Share PDF
     Quotation_Sent --> Quotation_Accepted : Client Approves
     Quotation_Sent --> Quotation_Rejected : Client Rejects
     Quotation_Rejected --> Quotation_Draft : Revise Quote
     
-    Quotation_Accepted --> Invoice_Draft : Convert to Invoice (1-tap)
-    [*] --> Invoice_Draft : Create New Invoice
+    Quotation_Accepted --> Invoice_Draft : Convert to Invoice
+    [*] --> Invoice_Draft : Create Invoice
 
-    Invoice_Draft --> Invoice_Sent : Share PDF / Mark Sent
+    Invoice_Draft --> Invoice_Sent : Send or Share PDF
     Invoice_Sent --> Overdue : Due Date Passes
-    Invoice_Sent --> Partially_Paid : Partial Payment Logged
-    Overdue --> Partially_Paid : Partial Payment Logged
+    Invoice_Sent --> Partially_Paid : Partial Deposit Logged
+    Overdue --> Partially_Paid : Partial Deposit Logged
     
-    Partially_Paid --> Paid : Balance Paid (PaidAmount >= Total)
-    Invoice_Sent --> Paid : Full Payment Logged
-    Overdue --> Paid : Full Payment Logged
+    Partially_Paid --> Paid : Remaining Balance Cleared
+    Invoice_Sent --> Paid : Full Payment Received
+    Overdue --> Paid : Full Payment Received
 
     Paid --> [*]
 ```
@@ -243,25 +243,25 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    A[User Enters Query in Home Search Box] --> B[Tokenize Search Query by Whitespace]
-    B --> C[Active Category Filter Check]
+    A["User Enters Query in Search Box"] --> B["Tokenize Query by Whitespace"]
+    B --> C["Check Active Category Filter"]
     
-    C -->|Filter: All or Clients| D[Search Clients: Name, Company, Contact, Email, Phone, Notes]
-    C -->|Filter: All or Invoices| E[Search Invoices: Number, Title, Client, Items, Status, Amount]
-    C -->|Filter: All or Quotes| F[Search Quotes: Number, Title, Client, Items, Status, Amount]
-    C -->|Filter: All or Projects| G[Search Projects: Name, Client, Deliverables, Status, Budget]
+    C -->|"All or Clients"| D["Search Clients: Name, Company, Email, Phone"]
+    C -->|"All or Invoices"| E["Search Invoices: Number, Title, Client, Items"]
+    C -->|"All or Quotes"| F["Search Quotes: Number, Title, Client, Items"]
+    C -->|"All or Projects"| G["Search Projects: Name, Client, Deliverables"]
 
-    D --> H[Aggregate Matched Entity Lists]
+    D --> H["Aggregate Matched Results"]
     E --> H
     F --> H
     G --> H
 
-    H --> I{Total Matches > 0?}
-    I -->|Yes| J[Render Categorized Search Results with Status Badges]
-    I -->|No| K[Render Animated Empty State with Clear Button]
+    H --> I{"Any Matches Found?"}
+    I -->|"Yes"| J["Render Categorized Cards with Status Badges"]
+    I -->|"No"| K["Render Animated Empty State with Reset Button"]
 
-    J --> L[User Taps Any Matched Card]
-    L --> M[Zoom Navigation to Dedicated Entity Detail Screen]
+    J --> L["User Taps Matched Card"]
+    L --> M["Zoom Navigation to Dedicated Detail Screen"]
 ```
 
 ---

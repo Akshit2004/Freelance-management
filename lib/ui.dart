@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'fx.dart';
 import 'motion.dart';
 
 class C {
@@ -94,13 +95,18 @@ Color statusColor(String s) => statusStyle(s).$2;
 extension Entrance on Widget {
   /// Staggered entrance. Skipped entirely when the system asks for reduced motion.
   Widget enter(int i) => Builder(
-        builder: (context) => MediaQuery.disableAnimationsOf(context)
-            ? this
-            : animate(delay: (55 * min(i, 10)).ms)
-                .fadeIn(duration: 380.ms, curve: Curves.easeOut)
-                .slideY(begin: .14, duration: 650.ms, curve: const Cubic(.34, 1.4, .64, 1)) // spring overshoot
-                .scaleXY(begin: .97, duration: 650.ms, curve: Curves.easeOutCubic)
-                .blur(begin: const Offset(0, 5), end: Offset.zero, duration: 420.ms),
+        builder: (context) {
+          if (MediaQuery.disableAnimationsOf(context)) return this;
+          // Below the first screenful a one-shot entrance would play while the item is still off-screen, unseen. Those items
+          // instead tip up and settle as they scroll into view (see fx.dart), which also works on the way back up.
+          if (i >= 5 && Scrollable.maybeOf(context, axis: Axis.vertical) != null) return ScrollReveal.around(context, this);
+          var a = animate(delay: (55 * min(i, 10)).ms)
+              .fadeIn(duration: 380.ms, curve: Curves.easeOut)
+              .slideY(begin: .14, duration: 650.ms, curve: const Cubic(.34, 1.4, .64, 1)) // spring overshoot
+              .scaleXY(begin: .97, duration: 650.ms, curve: Curves.easeOutCubic);
+          if (i < 3) a = a.blur(begin: const Offset(0, 5), end: Offset.zero, duration: 420.ms); // a blur filter per card is costly: top cards only
+          return a;
+        },
       );
 }
 
@@ -624,7 +630,9 @@ class Header extends StatelessWidget {
   const Header(this.title, {super.key, this.sub, this.onAdd, this.addLabel = 'Add'});
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) => ScrollParallax.around(context, _row());
+
+  Widget _row() => Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -689,21 +697,11 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
         child: Column(
           children: [
-            Builder(builder: (context) {
-              final box = Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(color: C.draftBg, borderRadius: BorderRadius.circular(20)),
-                child: Icon(icon, size: 28, color: C.muted),
-              );
-              return MediaQuery.disableAnimationsOf(context)
-                  ? box
-                  : box.animate(onPlay: (c) => c.repeat(reverse: true)).moveY(begin: -4, end: 4, duration: 1800.ms, curve: Curves.easeInOut);
-            }),
-            const SizedBox(height: 16),
+            LivingBadge(icon), // a ring that draws itself, a turning dashed orbit and drifting sparkles round the floating icon
+            const SizedBox(height: 12),
             Text(title, style: display(20), textAlign: TextAlign.center),
             const SizedBox(height: 6),
             Text(sub, style: muted, textAlign: TextAlign.center),
@@ -738,7 +736,7 @@ class Screen extends StatelessWidget {
           actions: actions,
         ),
         // edge-to-edge: keep content clear of the gesture / 3-button bar (the `bottom` area below does its own SafeArea)
-        body: bottom == null ? SafeArea(top: false, child: body) : body,
+        body: bottom == null ? SafeArea(top: false, child: ScrollProgress(child: body)) : ScrollProgress(child: body),
         bottomNavigationBar: bottom == null
             ? null
             : SafeArea(minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16), child: bottom!),

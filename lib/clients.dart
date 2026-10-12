@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'builders.dart';
 import 'client_timeline.dart';
 import 'docs.dart';
+import 'fx.dart';
 import 'models.dart';
 import 'motion.dart';
 import 'projects.dart';
@@ -128,7 +129,7 @@ class _ClientCard extends StatelessWidget {
       onTap: () => Navigator.push(context, zoom(ClientDetailPage(client.id))),
       child: Row(
         children: [
-          AvatarSquircle(client.name, initial: client.ini, color: Color(client.colorValue), size: 46),
+          FlyTag('client-avatar-${client.id}', child: AvatarSquircle(client.name, initial: client.ini, color: Color(client.colorValue), size: 46)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -245,7 +246,7 @@ class ClientDetailPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              AvatarSquircle(c.name, initial: c.ini, color: Color(c.colorValue), size: 62),
+              FlyTag('client-avatar-${c.id}', child: AvatarSquircle(c.name, initial: c.ini, color: Color(c.colorValue), size: 62)),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(

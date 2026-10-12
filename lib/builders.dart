@@ -181,6 +181,7 @@ Widget _action(String label, IconData icon, VoidCallback? onTap, {Key? key, bool
         key: key,
         constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(horizontal: 14),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: dark ? C.dark : C.chipLight,
           borderRadius: BorderRadius.circular(14),
@@ -238,7 +239,7 @@ class _QuoteBuilderPageState extends State<QuoteBuilderPage> {
   String template = 'proposal';
   late String clientId = widget.clientId, projectId = widget.projectId ?? '';
   final brief = TextEditingController(), title = TextEditingController();
-  late final taxCtl = TextEditingController(text: numText(context.read<Store>().profile.defaultTax));
+  late final TextEditingController taxCtl;
   final discountCtl = TextEditingController(text: '0');
   int revisions = 2, validity = 30;
   String planId = 'half', payTerms = 'Net 14';
@@ -247,6 +248,12 @@ class _QuoteBuilderPageState extends State<QuoteBuilderPage> {
   final lines = <BuilderLine>[];
   bool addToProject = true, busy = false, tried = false;
   String progress = '';
+
+  @override
+  void initState() {
+    super.initState();
+    taxCtl = TextEditingController(text: numText(context.read<Store>().profile.defaultTax));
+  }
 
   @override
   void dispose() {
@@ -439,7 +446,7 @@ class _QuoteBuilderPageState extends State<QuoteBuilderPage> {
               ),
               const SizedBox(height: 10),
               Row(children: [
-                _action(busy ? 'Writing$progress…' : 'Generate the quotation', Icons.auto_awesome_rounded, busy ? null : _generate, key: const Key('quote-generate'), dark: true),
+                Expanded(child: _action(busy ? 'Writing$progress…' : 'Generate the quotation', Icons.auto_awesome_rounded, busy ? null : _generate, key: const Key('quote-generate'), dark: true)),
               ]),
               const SizedBox(height: 6),
               Text('Writes the items, scope, features, timeline and payment plan. $aiNote', style: const TextStyle(fontSize: 11.5, color: C.muted, height: 1.35)),
@@ -508,7 +515,9 @@ class _QuoteBuilderPageState extends State<QuoteBuilderPage> {
             '6 · What the quotation will say',
             sections.isEmpty
                 ? const Text('Describe the job and generate, or switch on clauses above, and the written sections appear here.', style: TextStyle(fontSize: 13, color: C.muted, height: 1.4))
-                : Column(children: [
+                : Material(
+                    type: MaterialType.transparency, // the tiles paint their ink on the nearest Material, not on the card behind them
+                    child: Column(children: [
                     for (final sec in sections)
                       Theme(
                         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -521,7 +530,7 @@ class _QuoteBuilderPageState extends State<QuoteBuilderPage> {
                           children: [DocBlocksView(sec.body)],
                         ),
                       ),
-                  ]),
+                  ])),
             hint: sections.isEmpty ? null : '${sections.length} sections, tap to read. They are saved on the quotation and printed after the totals.',
           ),
         ],
@@ -550,8 +559,7 @@ class _InvoiceBuilderPageState extends State<InvoiceBuilderPage> {
   final customPct = TextEditingController(text: '30');
   late String payTerms;
   double late = 0;
-  late final notes = TextEditingController(text: context.read<Store>().profile.terms);
-  late final taxCtl = TextEditingController(text: numText(context.read<Store>().profile.defaultTax));
+  late final TextEditingController notes, taxCtl; // made in initState: a lazy one would first be built while the page is being disposed
   final discountCtl = TextEditingController(text: '0');
   final lines = <BuilderLine>[];
   bool tried = false;
@@ -560,6 +568,8 @@ class _InvoiceBuilderPageState extends State<InvoiceBuilderPage> {
   void initState() {
     super.initState();
     final s = context.read<Store>();
+    notes = TextEditingController(text: s.profile.terms);
+    taxCtl = TextEditingController(text: numText(s.profile.defaultTax));
     payTerms = s.profile.dueDays <= 0 ? 'Due on receipt' : 'Net ${s.profile.dueDays}';
     if (widget.quoteId != null && s.doc(widget.quoteId) != null) {
       final q = s.doc(widget.quoteId)!;

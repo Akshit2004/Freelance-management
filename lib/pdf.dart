@@ -85,7 +85,7 @@ Future<Uint8List> buildPdf(Doc d) async {
           child: pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
             pw.Expanded(
               child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-                pw.Text(kindWord, style: pw.TextStyle(font: display, fontSize: 30, color: PdfColors.white)),
+                pw.Text(kindWord, style: pw.TextStyle(font: display, fontSize: kindWord.length > 8 ? 21 : 30, color: PdfColors.white)),
                 pw.SizedBox(height: 6),
                 pw.Text(d.number, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
                 if (d.title.trim().isNotEmpty)
@@ -149,6 +149,8 @@ Future<Uint8List> buildPdf(Doc d) async {
           ? pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: ink, width: .8)))
           : pw.BoxDecoration(color: look == 'band' ? accent : ink),
       cellStyle: pw.TextStyle(fontSize: fontSize),
+      headerAlignment: pw.Alignment.centerLeft,
+      cellAlignment: pw.Alignment.centerLeft,
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 9),
       oddRowDecoration: minimal ? null : pw.BoxDecoration(color: PdfColor.fromHex('#F4F1EA')),
       rowDecoration: minimal ? pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300, width: .4))) : null,
@@ -216,7 +218,14 @@ Future<Uint8List> buildPdf(Doc d) async {
             ),
           ),
       };
-      widgets.add(i == 0 ? pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [sectionTitle(sec.title), w]) : w); // title stays with its first block
+      if (i == 0) {
+        final small = switch (b) { ParaBlock() => true, BulletsBlock() => b.items.length <= 8, TableBlock() => b.rows.length <= 6 };
+        final group = pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [sectionTitle(sec.title), w]);
+        // a Column may be split across pages; Inseparable keeps title and first block together, so no title is stranded at the foot of a page
+        widgets.add(small ? pw.Inseparable(child: group) : group);
+      } else {
+        widgets.add(w);
+      }
     }
     if (blocks.isEmpty) widgets.add(sectionTitle(sec.title));
     return widgets;
@@ -362,12 +371,13 @@ Future<Uint8List> buildPdf(Doc d) async {
       ],
       if (detailed) ...[
         pw.SizedBox(height: 30),
-        pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Inseparable(
+            child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
           sectionTitle('Acceptance'),
           pw.Text('To accept this quotation, sign below or confirm in writing by message or email.', style: const pw.TextStyle(fontSize: 10)),
           pw.SizedBox(height: 10),
           pw.Row(children: [signature('ACCEPTED BY${c == null ? '' : ' · ${c.name}'}'), pw.SizedBox(width: 28), signature('FOR${biz.isEmpty ? '' : ' · $biz'}')]),
-        ]),
+        ])),
       ],
     ],
   ));

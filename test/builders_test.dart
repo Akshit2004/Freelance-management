@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:freelance_os/builder_widgets.dart';
 import 'package:freelance_os/builders.dart';
 import 'package:freelance_os/docs.dart';
@@ -24,7 +23,7 @@ void _seed({double rate = 1000}) {
   ];
 }
 
-Doc _quote({String id = 'q1', bool converted = false}) => Doc(
+Doc _quote({String id = 'q1'}) => Doc(
       id: id,
       kind: 'quote',
       number: 'QT-2026-001',
@@ -37,8 +36,18 @@ Doc _quote({String id = 'q1', bool converted = false}) => Doc(
       schedule: schedulePresets[1].build(),
     );
 
+/// Scrolls a long page top to bottom so every lazily built part gets laid out once (overflows surface through takeException).
+Future<void> _scrollAll(WidgetTester t) async {
+  final list = find.byType(ListView).first;
+  for (var i = 0; i < 24; i++) {
+    await t.drag(list, const Offset(0, -260));
+    await t.pump();
+  }
+}
+
 Future<void> _tap(WidgetTester t, String key) async {
   await t.ensureVisible(find.byKey(Key(key)));
+  await t.pump(); // apply the scroll before the tap reads the widget's position
   await t.tap(find.byKey(Key(key)));
   await settle(t);
 }
@@ -107,11 +116,11 @@ void main() {
       await pumpScreen(t, const QuoteBuilderPage(clientId: 'c1'), size: tall);
       await _tap(t, 'template-quick');
       await t.enterText(find.byKey(const Key('quote-brief')), 'Logo for a bakery.');
-      await t.tap(find.text('3'));
-      await t.tap(find.text('Changes'.isEmpty ? '' : 'Revisions and changes'));
-      await t.tap(find.text('2% a month').first);
+      await t.tap(find.widgetWithText(ChoicePill, '3'));
+      await t.tap(find.widgetWithText(ChoicePill, 'Revisions and changes'));
+      await t.tap(find.widgetWithText(ChoicePill, '2% a month'));
       await t.pump();
-      await t.tap(find.text('Net 30').first);
+      await t.tap(find.widgetWithText(ChoicePill, 'Net 30'));
       await t.pump();
       await t.tap(find.byKey(const Key('quote-new-item')));
       await settle(t);
@@ -123,7 +132,7 @@ void main() {
       final q = store.docs.single;
       expect(q.template, 'quick');
       final titles = q.sections.map((x) => x.title).toList();
-      expect(titles, ['Overview', 'Payment terms', 'Revisions and changes', 'Validity'], reason: 'quick quote clauses + the one switched on');
+      expect(titles, ['Overview', 'Scope of work', 'Payment terms', 'Revisions and changes', 'Validity'], reason: 'the item is the scope; quick quote clauses + the one switched on');
       expect(q.sections.firstWhere((x) => x.title == 'Payment terms').body, allOf(contains('Net 30'), contains('late charge of 2% per month')));
       expect(q.sections.firstWhere((x) => x.title == 'Revisions and changes').body, contains('Up to 3 rounds'));
     });
@@ -159,11 +168,7 @@ void main() {
     testWidgets('layouts fit a small phone with large text', (t) async {
       _seed();
       await pumpScreen(t, const QuoteBuilderPage(clientId: 'c1', projectId: 'p1'), size: const Size(320, 568), textScale: 1.5);
-      expect(t.takeException(), isNull);
-      for (final id in ['quote-brief', 'quote-create']) {
-        await t.ensureVisible(find.byKey(Key(id)));
-        await t.pump();
-      }
+      await _scrollAll(t);
       expect(t.takeException(), isNull);
     });
   });
@@ -190,7 +195,7 @@ void main() {
       expect(inv.due.difference(inv.date).inDays, 30);
       expect(inv.items.single.desc, 'Build');
       expect(inv.taxPct, 18);
-      expect(inv.notes, contains('late charge of 2% per month'));
+      expect(inv.notes, contains('charge of 2% per month'));
       expect(find.byType(DocDetailPage), findsOneWidget);
     });
 
@@ -200,7 +205,7 @@ void main() {
       await pumpScreen(t, const InvoiceBuilderPage(clientId: 'c1'), size: tall);
       await t.tap(find.textContaining('Advance, on approval'));
       await t.pump();
-      expect(find.textContaining('Invoice total ₹5,900.00'), findsOneWidget, reason: '50% of 10,000 + 18% tax');
+      expect(find.textContaining('Invoice total ₹5,900 '), findsOneWidget, reason: '50% of 10,000 + 18% tax');
       await _tap(t, 'invoice-create');
       final inv = store.docs.firstWhere((d) => d.isInvoice);
       expect(inv.items.single.rate, 5000);
@@ -264,6 +269,7 @@ void main() {
       _seed();
       store.docs = [_quote()];
       await pumpScreen(t, const InvoiceBuilderPage(clientId: 'c1'), size: const Size(320, 568), textScale: 1.5);
+      await _scrollAll(t);
       expect(t.takeException(), isNull);
     });
   });
@@ -380,9 +386,17 @@ void main() {
         ..sections = [DocSection('Timeline', 'Phase | Work | Duration\n1 | Staff management | 2 weeks\nEstimated total: 2 weeks'), DocSection('Scope', '- one\n- two')];
       store.docs = [q];
       await pumpScreen(t, DocEditor(store.doc('q1')!), size: const Size(320, 568), textScale: 1.5);
+      await _scrollAll(t);
       expect(t.takeException(), isNull);
       await pumpScreen(t, const DocDetailPage('q1'), size: const Size(320, 568), textScale: 1.5);
+      await _scrollAll(t);
       expect(t.takeException(), isNull);
+      await t.drag(find.byType(ListView).first, const Offset(0, 4000)); // back to the top
+      await t.pump();
+      for (var i = 0; i < 8 && find.byType(DocBlocksView).evaluate().isEmpty; i++) {
+        await t.drag(find.byType(ListView).first, const Offset(0, -250));
+        await t.pump();
+      }
       expect(find.byType(DocBlocksView), findsWidgets);
     });
   });

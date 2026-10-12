@@ -7,6 +7,7 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:provider/provider.dart';
 
 import 'ai.dart';
+import 'ai_svg_animator.dart';
 import 'cloud_backup.dart';
 import 'clients.dart';
 import 'docs.dart';
@@ -331,29 +332,41 @@ class HustlerNavBar extends StatelessWidget {
               ),
             Positioned(left: 2 * w, width: w, top: 0, child: const _MagicButton()),
             Positioned(
-              right: 8,
-              top: _lift - 14,
+              right: 12,
+              top: _lift - 12,
               child: Semantics(
                 button: true,
-                label: 'More tools',
+                label: 'Workspace Tools menu',
                 child: Pressable(
                   onTap: () => openBottomSubMenu(context),
                   child: Container(
-                    width: 32,
-                    height: 32,
+                    key: const Key('navbar-sub-menu-button'),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                     decoration: BoxDecoration(
                       color: C.card,
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: C.border),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: .06),
                           blurRadius: 6,
-                          offset: const Offset(0, 2),
+                          offset: const Offset(0, 1),
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.widgets_outlined, size: 16, color: C.text),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.widgets_outlined, size: 12, color: C.orange),
+                        const SizedBox(width: 4),
+                        Text(
+                          'TOOLS',
+                          style: mono(8.5, color: C.text, weight: FontWeight.w700, letterSpacing: 0.8),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.keyboard_arrow_up_rounded, size: 12, color: C.dim),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -365,15 +378,12 @@ class HustlerNavBar extends StatelessWidget {
   }
 }
 
-/// The raised centre button that opens the Magic Scratchpad.
+/// The raised centre button with GSAP-inspired AI SVG animations opening Magic Scratchpad.
 class _MagicButton extends StatelessWidget {
   const _MagicButton();
 
   @override
   Widget build(BuildContext context) {
-    final still = MediaQuery.disableAnimationsOf(context); // reduced motion: no endless pulse / wobble
-    final pulse = Container(width: 62, height: 62, decoration: const BoxDecoration(shape: BoxShape.circle, color: C.orange));
-    const spark = Icon(Icons.auto_awesome, color: Colors.white, size: 27);
     return Semantics(
       label: 'Magic Scratchpad',
       child: Pressable(
@@ -386,18 +396,29 @@ class _MagicButton extends StatelessWidget {
             width: 70,
             height: 62,
             child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
-              if (!still)
-                pulse.animate(onPlay: (c) => c.repeat()).scaleXY(begin: 1, end: 1.45, duration: 1900.ms, curve: Curves.easeOut).fadeOut(begin: .28, duration: 1900.ms),
               Container(
                 width: 62,
                 height: 62,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFFF8A4C), C.orange, C.orangeDark]),
-                  border: Border.all(color: C.bg, width: 4),
-                  boxShadow: [BoxShadow(color: C.orange.withValues(alpha: .45), blurRadius: 18, offset: const Offset(0, 6))],
+                  gradient: const RadialGradient(
+                    colors: [Color(0xFF2E2218), Color(0xFF181512), Color(0xFF0F0E0C)],
+                    stops: [0.0, 0.7, 1.0],
+                  ),
+                  border: Border.all(color: C.orange.withValues(alpha: 0.5), width: 2.5),
+                  boxShadow: [
+                    BoxShadow(color: C.orange.withValues(alpha: .38), blurRadius: 18, offset: const Offset(0, 5)),
+                  ],
                 ),
-                child: still ? spark : spark.animate(onPlay: (c) => c.repeat(reverse: true)).rotate(begin: -.04, end: .04, duration: 1600.ms, curve: Curves.easeInOut),
+                child: const Center(
+                  child: AiSvgAnimator(
+                    size: 56,
+                    showGlow: true,
+                    primaryColor: Color(0xFFFF5722),
+                    secondaryColor: Color(0xFFFFB300),
+                    accentColor: Color(0xFFFF8A65),
+                  ),
+                ),
               ),
             ]),
           ),
