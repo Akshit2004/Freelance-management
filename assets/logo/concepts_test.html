@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FreelanceOS Logo Concepts</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #080B11;
+    color: #F8FAFC;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+  h1 { font-size: 24px; font-weight: 600; color: #94A3B8; letter-spacing: -0.5px; }
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+    max-width: 1200px;
+  }
+  .card {
+    background: #0F1420;
+    border: 1px solid #1E293B;
+    border-radius: 24px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 320px;
+  }
+  .card h3 { font-size: 16px; font-weight: 600; color: #E2E8F0; }
+  .card p { font-size: 13px; color: #64748B; text-align: center; }
+  svg {
+    width: 240px;
+    height: 240px;
+  }
+</style>
+</head>
+<body>
+
+<h1>FreelanceOS — Clean Geometric Logo Explorations for GSAP</h1>
+
+<div class="grid">
+  <!-- Concept A: The Neo-F Spark (Monoline F + AI Diamond Core) -->
+  <div class="card">
+    <h3>Concept A: "The AI Monogram"</h3>
+    <p>Clean modern F made of two fluid strokes, orbiting a glowing 4-point AI spark. Effortless to draw with GSAP.</p>
+    <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad-a" x1="140" y1="140" x2="380" y2="380" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#6366F1" />
+          <stop offset="100%" stop-color="#06B6D4" />
+        </linearGradient>
+        <linearGradient id="grad-spark-a" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38BDF8" />
+          <stop offset="100%" stop-color="#A855F7" />
+        </linearGradient>
+        <filter id="glow-a" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="8" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <!-- Badge background -->
+      <rect x="24" y="24" width="464" height="464" rx="104" fill="#0D111D" stroke="#1E293B" stroke-width="2"/>
+      <!-- Soft ambient backdrop -->
+      <circle cx="256" cy="256" r="120" fill="url(#grad-a)" opacity="0.08"/>
+
+      <!-- F Spine & Top Arm -->
+      <path d="M 176 368 V 192 C 176 156 204 144 240 144 H 336"
+            stroke="url(#grad-a)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- F Crossbar with forward arrow / pulse terminal -->
+      <path d="M 176 264 H 288 C 304 264 316 276 316 292 V 304"
+            stroke="url(#grad-a)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- AI 4-Point Spark -->
+      <path d="M 348 240 Q 348 272 316 272 Q 348 272 348 304 Q 348 272 380 272 Q 348 272 348 240 Z"
+            fill="url(#grad-spark-a)" filter="url(#glow-a)"/>
+
+      <!-- Secondary micro-spark -->
+      <circle cx="240" cy="368" r="10" fill="#06B6D4" />
+    </svg>
+  </div>
+
+  <!-- Concept B: The Infinite Flow (Interlocking continuous Möbius loops forming F + infinity) -->
+  <div class="card">
+    <h3>Concept B: "The Velocity Loop"</h3>
+    <p>A single seamless ribbon flowing into an F-infinity emblem. Infinite projects, clients, and automated invoices.</p>
+    <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad-b1" x1="120" y1="120" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#4F46E5" />
+          <stop offset="50%" stop-color="#7C3AED" />
+          <stop offset="100%" stop-color="#06B6D4" />
+        </linearGradient>
+        <linearGradient id="grad-b2" x1="200" y1="200" x2="360" y2="360" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#38BDF8" />
+          <stop offset="100%" stop-color="#10B981" />
+        </linearGradient>
+      </defs>
+      <!-- Badge -->
+      <rect x="24" y="24" width="464" height="464" rx="104" fill="#0D111D" stroke="#1E293B" stroke-width="2"/>
+
+      <!-- Main Ribbon 1: Ascender and Upper Flow -->
+      <path d="M 176 360 L 176 200 C 176 156 212 144 248 144 H 336"
+            stroke="url(#grad-b1)" stroke-width="26" stroke-linecap="round"/>
+
+      <!-- Main Ribbon 2: The Continuous Infinity Crossbar -->
+      <path d="M 176 256 H 272 C 320 256 348 284 348 320 C 348 356 320 376 280 376 C 240 376 220 336 256 296 C 284 264 336 244 360 216"
+            stroke="url(#grad-b2)" stroke-width="26" stroke-linecap="round"/>
+
+      <!-- AI Spark Core -->
+      <path d="M 288 176 Q 288 200 264 200 Q 288 200 288 224 Q 288 200 312 200 Q 288 200 288 176 Z"
+            fill="#38BDF8"/>
+    </svg>
+  </div>
+
+  <!-- Concept C: The Minimalist Prismatic "F" (Ultra-refined Stripe/Linear style) -->
+  <div class="card">
+    <h3>Concept C: "The Prismatic Pulse"</h3>
+    <p>Ultra-clean geometric minimalism. Two parallel gradient arcs + AI diamond beacon. Iconic at 16px or 1024px.</p>
+    <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad-c-top" x1="160" y1="140" x2="360" y2="240" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#6366F1" />
+          <stop offset="100%" stop-color="#8B5CF6" />
+        </linearGradient>
+        <linearGradient id="grad-c-mid" x1="160" y1="240" x2="320" y2="340" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#8B5CF6" />
+          <stop offset="100%" stop-color="#06B6D4" />
+        </linearGradient>
+        <linearGradient id="grad-c-stem" x1="160" y1="160" x2="160" y2="360" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#6366F1" />
+          <stop offset="100%" stop-color="#06B6D4" />
+        </linearGradient>
+        <linearGradient id="grad-c-star" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38BDF8" />
+          <stop offset="50%" stop-color="#EC4899" />
+          <stop offset="100%" stop-color="#F59E0B" />
+        </linearGradient>
+        <filter id="glow-c" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="12" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <!-- Badge -->
+      <rect x="24" y="24" width="464" height="464" rx="104" fill="#0D111D" stroke="#1E293B" stroke-width="2"/>
+      
+      <!-- Ambient center radial -->
+      <circle cx="256" cy="256" r="130" fill="url(#grad-c-mid)" opacity="0.1" filter="blur(20px)"/>
+
+      <!-- Vertical Stem -->
+      <line x1="176" y1="160" x2="176" y2="352" stroke="url(#grad-c-stem)" stroke-width="28" stroke-linecap="round"/>
+
+      <!-- Top Arm with curved corner -->
+      <path d="M 176 160 C 220 160 260 160 336 160" stroke="url(#grad-c-top)" stroke-width="28" stroke-linecap="round"/>
+
+      <!-- Middle Arm with dynamic sweep -->
+      <path d="M 176 256 C 220 256 250 256 296 256" stroke="url(#grad-c-mid)" stroke-width="28" stroke-linecap="round"/>
+
+      <!-- Central AI Prism Star -->
+      <g filter="url(#glow-c)">
+        <path d="M 336 296 Q 336 336 296 336 Q 336 336 336 376 Q 336 336 376 336 Q 336 336 336 296 Z"
+              fill="url(#grad-c-star)"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+</body>
+</html>

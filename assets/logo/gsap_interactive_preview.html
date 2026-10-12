@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FreelanceOS — GSAP SVG Logo Animation Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <style>
+    :root {
+      --bg: #07090E;
+      --card-bg: rgba(15, 20, 32, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-indigo: #6366F1;
+      --accent-violet: #8B5CF6;
+      --accent-cyan: #06B6D4;
+      --accent-pink: #EC4899;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #151C2F 0%, var(--bg) 70%);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 80px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+      max-width: 640px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #A5B4FC;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .main-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 32px;
+      max-width: 1080px;
+      width: 100%;
+    }
+
+    /* Stage Panel */
+    .stage-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1 1 420px;
+      max-width: 520px;
+      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .svg-wrapper {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    svg#logo-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    button.btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    button.btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    button.btn:active {
+      transform: translateY(1px);
+    }
+
+    button.btn-primary {
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-violet));
+      border: none;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    }
+
+    button.btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+    }
+
+    .preset-selector {
+      display: flex;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .preset-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-btn.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Code Panel */
+    .code-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 30px;
+      flex: 1 1 440px;
+      max-width: 540px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .code-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #CBD5E1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .copy-btn {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #A5B4FC;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(99, 102, 241, 0.3);
+      color: #FFF;
+    }
+
+    pre {
+      background: #080B11;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #E2E8F0;
+      overflow-x: auto;
+      flex: 1;
+    }
+
+    .token-kw { color: #F43F5E; }
+    .token-fn { color: #38BDF8; }
+    .token-str { color: #A7F3D0; }
+    .token-num { color: #FBBF24; }
+    .token-comment { color: #64748B; font-style: italic; }
+
+    /* Features Grid */
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    .spec-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .spec-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .spec-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: #F8FAFC;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="badge">⚡ GSAP SVG Animation Showcase</div>
+    <h1>FreelanceOS Visual Identity</h1>
+    <p class="subtitle">Designed specifically for seamless SVG stroke drawing, spring scale morphs, and framer-motion micro-animations.</p>
+  </header>
+
+  <div class="main-container">
+    <!-- Visual Stage -->
+    <div class="stage-card">
+      <div class="svg-wrapper">
+        <svg id="logo-svg" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="primary-grad" x1="160" y1="140" x2="360" y2="360" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#6366F1" />
+              <stop offset="50%" stop-color="#8B5CF6" />
+              <stop offset="100%" stop-color="#06B6D4" />
+            </linearGradient>
+
+            <linearGradient id="crossbar-grad" x1="170" y1="250" x2="300" y2="250" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#8B5CF6" />
+              <stop offset="100%" stop-color="#06B6D4" />
+            </linearGradient>
+
+            <linearGradient id="spark-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38BDF8" />
+              <stop offset="50%" stop-color="#A855F7" />
+              <stop offset="100%" stop-color="#EC4899" />
+            </linearGradient>
+
+            <filter id="live-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="10" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- Squircle badge container -->
+          <rect id="anim-badge" x="32" y="32" width="448" height="448" rx="108" fill="#0C101C" stroke="rgba(255,255,255,0.08)" stroke-width="2.5"/>
+
+          <!-- Ambient Aura -->
+          <circle id="anim-aura" cx="256" cy="256" r="140" fill="url(#primary-grad)" opacity="0.14" />
+
+          <!-- Group -->
+          <g id="anim-group">
+            <!-- 1. The F Spine & Curved Top Arm -->
+            <path id="anim-stem"
+                  d="M 180 364 V 186 C 180 156 202 144 234 144 H 336"
+                  stroke="url(#primary-grad)"
+                  stroke-width="32"
+                  stroke-linecap="round"
+                  stroke-linejoin="round" />
+
+            <!-- 2. The Crossbar Flow Beam -->
+            <path id="anim-crossbar"
+                  d="M 180 256 H 292"
+                  stroke="url(#crossbar-grad)"
+                  stroke-width="32"
+                  stroke-linecap="round" />
+
+            <!-- 3. AI 4-Point Diamond Spark -->
+            <g id="anim-spark" transform="translate(348, 256)" filter="url(#live-glow)">
+              <path d="M 0 -44 Q 0 0 -44 0 Q 0 0 0 44 Q 0 0 44 0 Q 0 0 0 -44 Z"
+                    fill="url(#spark-grad)" />
+              <circle cx="0" cy="0" r="5" fill="#FFFFFF" opacity="0.9" />
+            </g>
+
+            <!-- 4. Accent Anchor Node -->
+            <circle id="anim-dot" cx="256" cy="364" r="8" fill="#06B6D4" opacity="0.85" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="controls">
+        <div class="preset-selector">
+          <button class="preset-btn active" onclick="setMode('hero')">Hero Ignition</button>
+          <button class="preset-btn" onclick="setMode('pulse')">AI Pulse</button>
+          <button class="preset-btn" onclick="setMode('spring')">Elastic Entrance</button>
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-primary" onclick="playAnim()">▶ Replay</button>
+          <button class="btn" onclick="togglePause()">⏸ Pause</button>
+          <button class="btn" onclick="reverseAnim()">⤺ Reverse</button>
+          <button class="btn" onclick="toggleLoop()">🔁 Loop</button>
+        </div>
+      </div>
+
+      <div class="specs-grid">
+        <div class="spec-item">
+          <div class="spec-label">Paths</div>
+          <div class="spec-val">Clean Vector</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">Format</div>
+          <div class="spec-val">SVG + PNG</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">Engine</div>
+          <div class="spec-val">GSAP 3.x</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Panel -->
+    <div class="code-card">
+      <div class="code-header">
+        <div class="code-title">
+          <span>📜</span>
+          <span>GSAP Animation Recipe</span>
+        </div>
+        <button class="copy-btn" onclick="copyCode()">Copy Code</button>
+      </div>
+      <pre><code id="code-block"><span class="token-comment">// FreelanceOS — Signature GSAP SVG Animation</span>
+<span class="token-kw">const</span> tl = gsap.<span class="token-fn">timeline</span>({ defaults: { ease: <span class="token-str">"power3.out"</span> } });
+
+<span class="token-comment">// 1. Measure and prime SVG stroke paths</span>
+<span class="token-kw">const</span> stem = document.<span class="token-fn">querySelector</span>(<span class="token-str">"#anim-stem"</span>);
+<span class="token-kw">const</span> crossbar = document.<span class="token-fn">querySelector</span>(<span class="token-str">"#anim-crossbar"</span>);
+<span class="token-kw">const</span> stemLen = stem.<span class="token-fn">getTotalLength</span>();
+<span class="token-kw">const</span> crossLen = crossbar.<span class="token-fn">getTotalLength</span>();
+
+<span class="token-comment">// 2. Hero ignition sequence</span>
+tl.<span class="token-fn">fromTo</span>([stem, crossbar], 
+  { strokeDasharray: (i) => i === 0 ? stemLen : crossLen, 
+    strokeDashoffset: (i) => i === 0 ? stemLen : crossLen },
+  { strokeDashoffset: <span class="token-num">0</span>, duration: <span class="token-num">1.2</span>, stagger: <span class="token-num">0.18</span> }
+)
+.<span class="token-fn">from</span>(<span class="token-str">"#anim-spark"</span>, {
+  scale: <span class="token-num">0</span>,
+  rotation: -<span class="token-num">90</span>,
+  duration: <span class="token-num">0.9</span>,
+  ease: <span class="token-str">"back.out(2)"</span>,
+  transformOrigin: <span class="token-str">"348px 256px"</span>
+}, <span class="token-str">"-=0.6"</span>)
+.<span class="token-fn">from</span>(<span class="token-str">"#anim-aura"</span>, {
+  opacity: <span class="token-num">0</span>,
+  scale: <span class="token-num">0.6</span>,
+  duration: <span class="token-num">1.0</span>,
+  transformOrigin: <span class="token-str">"center"</span>
+}, <span class="token-str">"-=0.8"</span>)
+.<span class="token-fn">from</span>(<span class="token-str">"#anim-dot"</span>, {
+  scale: <span class="token-num">0</span>,
+  opacity: <span class="token-num">0</span>,
+  duration: <span class="token-num">0.4</span>,
+  ease: <span class="token-str">"back.out(3)"</span>
+}, <span class="token-str">"-=0.5"</span>);</code></pre>
+    </div>
+  </div>
+
+  <script>
+    let mainTl;
+    let isLooping = false;
+    let currentMode = 'hero';
+
+    const stem = document.querySelector("#anim-stem");
+    const crossbar = document.querySelector("#anim-crossbar");
+    const stemLen = stem.getTotalLength();
+    const crossLen = crossbar.getTotalLength();
+
+    function initAnimation() {
+      if (mainTl) mainTl.kill();
+
+      if (currentMode === 'hero') {
+        mainTl = gsap.timeline({ repeat: isLooping ? -1 : 0, repeatDelay: 1 });
+        
+        mainTl
+          .set([stem, crossbar], {
+            strokeDasharray: (i) => i === 0 ? stemLen : crossLen,
+            strokeDashoffset: (i) => i === 0 ? stemLen : crossLen
+          })
+          .set("#anim-spark", { scale: 0, rotation: -90, transformOrigin: "348px 256px" })
+          .set("#anim-aura", { opacity: 0, scale: 0.5, transformOrigin: "256px 256px" })
+          .set("#anim-dot", { scale: 0, opacity: 0, transformOrigin: "256px 364px" })
+          .to([stem, crossbar], {
+            strokeDashoffset: 0,
+            duration: 1.1,
+            stagger: 0.15,
+            ease: "power3.out"
+          })
+          .to("#anim-spark", {
+            scale: 1,
+            rotation: 0,
+            duration: 0.85,
+            ease: "back.out(2)"
+          }, "-=0.55")
+          .to("#anim-aura", {
+            opacity: 0.18,
+            scale: 1,
+            duration: 1,
+            ease: "power2.out"
+          }, "-=0.8")
+          .to("#anim-dot", {
+            scale: 1,
+            opacity: 0.85,
+            duration: 0.45,
+            ease: "elastic.out(1, 0.4)"
+          }, "-=0.5");
+
+      } else if (currentMode === 'pulse') {
+        // Continuous ambient pulse
+        mainTl = gsap.timeline({ repeat: -1, yoyo: true });
+        mainTl
+          .set([stem, crossbar], { strokeDashoffset: 0 })
+          .to("#anim-spark", {
+            scale: 1.18,
+            rotation: 45,
+            duration: 1.4,
+            ease: "sine.inOut",
+            transformOrigin: "348px 256px"
+          })
+          .to("#anim-aura", {
+            scale: 1.25,
+            opacity: 0.32,
+            duration: 1.4,
+            ease: "sine.inOut",
+            transformOrigin: "256px 256px"
+          }, "<")
+          .to("#anim-dot", {
+            scale: 1.4,
+            opacity: 1,
+            duration: 1.4,
+            ease: "sine.inOut",
+            transformOrigin: "256px 364px"
+          }, "<");
+
+      } else if (currentMode === 'spring') {
+        // Elastic pop entrance
+        mainTl = gsap.timeline({ repeat: isLooping ? -1 : 0, repeatDelay: 1 });
+        mainTl
+          .set([stem, crossbar], { strokeDashoffset: 0 })
+          .from("#anim-group", {
+            scale: 0.4,
+            rotation: -15,
+            opacity: 0,
+            duration: 1.2,
+            ease: "elastic.out(1, 0.6)",
+            transformOrigin: "center"
+          })
+          .from("#anim-spark", {
+            scale: 0,
+            rotation: 180,
+            duration: 0.9,
+            ease: "back.out(2.5)",
+            transformOrigin: "348px 256px"
+          }, "-=0.8");
+      }
+    }
+
+    function playAnim() {
+      initAnimation();
+    }
+
+    function togglePause() {
+      if (mainTl) {
+        if (mainTl.paused()) mainTl.play();
+        else mainTl.pause();
+      }
+    }
+
+    function reverseAnim() {
+      if (mainTl) mainTl.reverse();
+    }
+
+    function toggleLoop() {
+      isLooping = !isLooping;
+      initAnimation();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      initAnimation();
+    }
+
+    function copyCode() {
+      const code = document.querySelector("#code-block").innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.querySelector(".copy-btn");
+        btn.innerText = "✓ Copied!";
+        setTimeout(() => btn.innerText = "Copy Code", 2000);
+      });
+    }
+
+    window.onload = () => {
+      initAnimation();
+    };
+  </script>
+</body>
+</html>

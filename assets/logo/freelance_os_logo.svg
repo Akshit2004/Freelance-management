@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- Primary Gradient for Monogram -->
+    <linearGradient id="fos-primary-grad" x1="160" y1="140" x2="360" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="50%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+
+    <!-- Secondary Gradient for Crossbar / Flow -->
+    <linearGradient id="fos-crossbar-grad" x1="170" y1="250" x2="300" y2="250" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+
+    <!-- AI Spark Gradient -->
+    <linearGradient id="fos-spark-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE" />
+      <stop offset="50%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#EC4899" />
+    </linearGradient>
+
+    <!-- Core Glow Filter -->
+    <filter id="fos-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Ambient Glow Behind Symbol -->
+  <circle id="fos-ambient" cx="256" cy="256" r="140" fill="url(#fos-primary-grad)" opacity="0.12" filter="blur(32px)" />
+
+  <g id="fos-logo-group">
+    <!-- Path 1: Primary 'F' Spine and Top Arm (Single clean continuous stroke) -->
+    <path id="fos-stem-top"
+          class="fos-draw-path"
+          d="M 180 364 V 186 C 180 156 202 144 234 144 H 336"
+          stroke="url(#fos-primary-grad)"
+          stroke-width="32"
+          stroke-linecap="round"
+          stroke-linejoin="round" />
+
+    <!-- Path 2: Middle Crossbar / Flow Beam -->
+    <path id="fos-crossbar"
+          class="fos-draw-path"
+          d="M 180 256 H 292"
+          stroke="url(#fos-crossbar-grad)"
+          stroke-width="32"
+          stroke-linecap="round" />
+
+    <!-- Path 3: AI Intelligence Spark (4-Point Geometric Diamond) -->
+    <g id="fos-spark-group" transform="translate(348, 256)" filter="url(#fos-glow)">
+      <path id="fos-spark"
+            d="M 0 -44 Q 0 0 -44 0 Q 0 0 0 44 Q 0 0 44 0 Q 0 0 0 -44 Z"
+            fill="url(#fos-spark-grad)" />
+      <!-- Center Micro Core -->
+      <circle id="fos-spark-core" cx="0" cy="0" r="5" fill="#FFFFFF" opacity="0.9" />
+    </g>
+
+    <!-- Path 4: Minimalist Focus Node / Balance Accent -->
+    <circle id="fos-node-dot"
+            cx="256"
+            cy="364"
+            r="8"
+            fill="#06B6D4"
+            opacity="0.8" />
+  </g>
+</svg>

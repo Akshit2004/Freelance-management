@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="fos-bg-grad" x1="64" y1="32" x2="448" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#111625" />
+      <stop offset="50%" stop-color="#0B0F19" />
+      <stop offset="100%" stop-color="#060911" />
+    </linearGradient>
+
+    <!-- Border Stroke Gradient -->
+    <linearGradient id="fos-border-grad" x1="32" y1="32" x2="480" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.5" />
+      <stop offset="35%" stop-color="#818CF8" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#1E293B" stop-opacity="0.8" />
+    </linearGradient>
+
+    <!-- Primary Monogram Gradient -->
+    <linearGradient id="fos-icon-primary-grad" x1="160" y1="140" x2="360" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="45%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+
+    <linearGradient id="fos-icon-crossbar-grad" x1="170" y1="250" x2="300" y2="250" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+
+    <!-- Spark Gradient -->
+    <linearGradient id="fos-icon-spark-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#EC4899" />
+    </linearGradient>
+
+    <!-- Drop Shadow Filter for Squircle -->
+    <filter id="fos-card-shadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#000000" flood-opacity="0.65" />
+    </filter>
+
+    <!-- Spark Glow Filter -->
+    <filter id="fos-spark-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="14" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- App Badge / Squircle Background -->
+  <rect id="fos-badge"
+        x="32" y="32"
+        width="448" height="448"
+        rx="108"
+        fill="url(#fos-bg-grad)"
+        stroke="url(#fos-border-grad)"
+        stroke-width="2.5"
+        filter="url(#fos-card-shadow)" />
+
+  <!-- Ambient Internal Aura Glow -->
+  <circle id="fos-aura"
+          cx="256" cy="256"
+          r="140"
+          fill="url(#fos-icon-primary-grad)"
+          opacity="0.16" />
+
+  <g id="fos-mark">
+    <!-- Path 1: Primary 'F' Spine & Top Arm -->
+    <path id="fos-path-stem"
+          d="M 180 364 V 186 C 180 156 202 144 234 144 H 336"
+          stroke="url(#fos-icon-primary-grad)"
+          stroke-width="32"
+          stroke-linecap="round"
+          stroke-linejoin="round" />
+
+    <!-- Path 2: Crossbar Flow Beam -->
+    <path id="fos-path-crossbar"
+          d="M 180 256 H 292"
+          stroke="url(#fos-icon-crossbar-grad)"
+          stroke-width="32"
+          stroke-linecap="round" />
+
+    <!-- Path 3: AI Intelligence Spark -->
+    <g id="fos-spark-container" transform="translate(348, 256)" filter="url(#fos-spark-glow)">
+      <path id="fos-spark-symbol"
+            d="M 0 -44 Q 0 0 -44 0 Q 0 0 0 44 Q 0 0 44 0 Q 0 0 0 -44 Z"
+            fill="url(#fos-icon-spark-grad)" />
+      <!-- Central White Micro-Diamond Core -->
+      <circle cx="0" cy="0" r="5" fill="#FFFFFF" opacity="0.95" />
+    </g>
+
+    <!-- Path 4: Balance Accent Node -->
+    <circle id="fos-accent-dot"
+            cx="256"
+            cy="364"
+            r="8"
+            fill="#06B6D4"
+            opacity="0.85" />
+  </g>
+</svg>
