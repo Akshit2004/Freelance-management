@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import 'builders.dart';
+import 'client_timeline.dart';
 import 'docs.dart';
 import 'models.dart';
 import 'motion.dart';
@@ -228,6 +230,11 @@ class ClientDetailPage extends StatelessWidget {
       title: 'Client',
       actions: [
         IconButton(
+          tooltip: 'Client timeline',
+          icon: const Icon(Icons.timeline_rounded, color: C.text),
+          onPressed: () => Navigator.push(context, zoom(ClientTimelinePage(initialClientId: c.id))),
+        ),
+        IconButton(
           tooltip: 'Edit client',
           icon: const Icon(Icons.edit_outlined, color: C.text),
           onPressed: () => Navigator.push(context, zoom(ClientEdit(c.copy()))),
@@ -276,9 +283,9 @@ class ClientDetailPage extends StatelessWidget {
             children: [
               _Action('+ Project', C.orange, Colors.white, () => newProject(context, c.id)),
               _Action('+ Invoice', C.dark, C.textLight,
-                  () => Navigator.push(context, zoom(DocEditor(s.newDoc('invoice', clientId: c.id), isNew: true)))),
+                  () => Navigator.push(context, zoom(InvoiceBuilderPage(clientId: c.id)))),
               _Action('+ Quote', C.chipBg, C.text,
-                  () => Navigator.push(context, zoom(DocEditor(s.newDoc('quote', clientId: c.id), isNew: true)))),
+                  () => Navigator.push(context, zoom(QuoteBuilderPage(clientId: c.id)))),
             ],
           ).enter(3),
           const Section('Contact'),

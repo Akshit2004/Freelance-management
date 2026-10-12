@@ -19,8 +19,9 @@ import 'models.dart';
 import 'motion.dart';
 import 'projects.dart';
 import 'state.dart';
-import 'voice_pack.dart';
+import 'sub_menu.dart';
 import 'ui.dart';
+import 'voice_pack.dart';
 
 void main() => runQuiet(_boot);
 
@@ -329,6 +330,34 @@ class HustlerNavBar extends StatelessWidget {
                 ),
               ),
             Positioned(left: 2 * w, width: w, top: 0, child: const _MagicButton()),
+            Positioned(
+              right: 8,
+              top: _lift - 14,
+              child: Semantics(
+                button: true,
+                label: 'More tools',
+                child: Pressable(
+                  onTap: () => openBottomSubMenu(context),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: C.card,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: C.border),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: .06),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.widgets_outlined, size: 16, color: C.text),
+                  ),
+                ),
+              ),
+            ),
           ]);
         }),
       ),

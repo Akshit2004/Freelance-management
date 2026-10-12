@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:freelance_os/ai.dart';
 
 void main() {
+  bulkTests();
   groupedTests();
   test('ProjectEstimate.parse reads modules with subtasks', () {
     final e = ProjectEstimate.parse('<think>\n\n</think>\n\nProject: CRM. Staff and stock.\nbudget 18,000\nStaff management\n- Staff profiles | 16\n- Attendance: 20h\nInventory:\n- Stock items | 12\nEmpty module\nLaunch | 6')!;
@@ -27,5 +28,18 @@ void groupedTests() {
     expect(e.todos.map((t) => t.text), ['Staff', 'Inventory', 'Billing']);
     expect(e.todos.first.sub.map((t) => t.text), ['Staff profiles', 'Attendance', 'Roles and access']);
     expect(e.hours, 66);
+  });
+}
+
+void bulkTests() {
+  test('ProjectEstimate.parseTasks reads typed lines for bulk add', () {
+    final t = ProjectEstimate.parseTasks(
+        'Design homepage | 8\nBudget review 2\nProject plan\n- Wireframes | 3\n- Colours\n\nDevelop API | 12h\n3) Notes app');
+    expect(t.map((x) => x.text), ['Design homepage', 'Budget review 2', 'Project plan', 'Develop API', 'Notes app']);
+    expect(t[0].hours, '8h');
+    expect(t[2].sub.map((x) => x.text), ['Wireframes', 'Colours']);
+    expect(t[2].sub.first.hours, '3h');
+    expect(t[3].hours, '12h');
+    expect(ProjectEstimate.parseTasks('   \n\n'), isEmpty);
   });
 }

@@ -369,21 +369,38 @@ class ProjectEstimate {
 
   /// Reads "budget 240000", module lines and "- task | hours" lines under them. Null when there is no task or no budget.
   static ProjectEstimate? parse(String text, {double rate = 0}) {
+    final r = _scan(text, ai: true);
+    final todos = r.todos..removeWhere((t) => t.sub.isEmpty && t.hoursValue == 0); // a module line with nothing under it
+    if (todos.isEmpty) return null;
+    final est = ProjectEstimate(0, todos);
+    if (rate > 0) return ProjectEstimate((est.hours * rate).roundToDouble(), todos, fromRate: true);
+    return r.budget == null || r.budget! <= 0 ? null : ProjectEstimate(r.budget!, todos);
+  }
+
+  /// Bulk add: one deliverable per line, "Name | hours" for its time, "- subtask" lines belong to the line above. Typed text, not model output,
+  /// so nothing is treated as a budget line or a prompt echo and lines without hours are kept.
+  static List<Todo> parseTasks(String text) => _scan(text, ai: false).todos;
+
+  static ({double? budget, List<Todo> todos}) _scan(String text, {required bool ai}) {
     double? budget;
     final todos = <Todo>[];
     Todo? module; // the last module line; the "- task" lines after it are its subtasks
     final hoursRe = RegExp(r'^(.+?)\s*[|:\u2013\u2014-]\s*(\d+(?:\.\d+)?)\s*(?:h|hrs?|hours?)?\s*$', caseSensitive: false);
-    for (final raw in text.replaceAll(RegExp(r'<think>[\s\S]*?(?:</think>|$)'), '').replaceAll(RegExp(r'```\w*'), '').split('\n')) {
+    final clean = ai ? text.replaceAll(RegExp(r'<think>[\s\S]*?(?:</think>|$)'), '').replaceAll(RegExp(r'```\w*'), '') : text;
+    for (final raw in clean.split('\n')) {
       final line = raw.trim();
-      if (line.isEmpty || RegExp(r'^(project|example|now do|notes?)\b', caseSensitive: false).hasMatch(line)) continue; // echoes of the prompt
-      final b = RegExp(r'^budget\s*:?\s*[^\d]*([\d,]+(?:\.\d+)?)', caseSensitive: false).firstMatch(line);
-      if (b != null) {
-        budget ??= double.tryParse(b.group(1)!.replaceAll(',', ''));
-        continue;
+      if (line.isEmpty) continue;
+      if (ai) {
+        if (RegExp(r'^(project|example|now do|notes?)\b', caseSensitive: false).hasMatch(line)) continue; // echoes of the prompt
+        final b = RegExp(r'^budget\s*:?\s*[^\d]*([\d,]+(?:\.\d+)?)', caseSensitive: false).firstMatch(line);
+        if (b != null) {
+          budget ??= double.tryParse(b.group(1)!.replaceAll(',', ''));
+          continue;
+        }
       }
       final isSub = RegExp(r'^[-*•]').hasMatch(line) || raw.startsWith(RegExp(r'\s{2,}'));
       final body = line.replaceFirst(RegExp(r'^[-*•]\s*'), '').replaceFirst(RegExp(r'^\d+[.)]\s+'), '');
-      final g = RegExp(r'^(.+?)\s*(?:>|›|»)\s*(.+)$').firstMatch(body); // "Module > task | hours"
+      final g = ai ? RegExp(r'^(.+?)\s*(?:>|›|»)\s*(.+)$').firstMatch(body) : null; // "Module > task | hours"
       final m = hoursRe.firstMatch(g?.group(2) ?? body);
       final h = m == null ? null : double.tryParse(m.group(2)!);
       if (h != null && h > 0 && g != null) {
@@ -400,14 +417,12 @@ class ProjectEstimate {
           todos.add(t);
           if (!isSub) module = t; // "Module | 40" followed by tasks: the tasks are its subtasks
         }
-      } else if (!isSub) {
+      } else if (isSub && module != null && !ai) {
+        module.sub.add(Todo(text: body)); // a typed subtask without hours
+      } else if (!isSub || !ai) {
         todos.add(module = Todo(text: body.replaceFirst(RegExp(r'[:\s]+$'), '')));
       }
     }
-    todos.removeWhere((t) => t.sub.isEmpty && t.hoursValue == 0); // a module line with nothing under it
-    if (todos.isEmpty) return null;
-    final est = ProjectEstimate(0, todos);
-    if (rate > 0) return ProjectEstimate((est.hours * rate).roundToDouble(), todos, fromRate: true);
-    return budget == null || budget <= 0 ? null : ProjectEstimate(budget, todos);
+    return (budget: budget, todos: todos);
   }
 }

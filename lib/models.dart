@@ -256,6 +256,151 @@ class Milestone {
   factory Milestone.fromJson(Map j) => Milestone(j['label'] ?? '', _d(j['pct']));
 }
 
+class PaymentRecord {
+  String id;
+  double amount;
+  DateTime date;
+  String method; // 'Bank Transfer', 'UPI', 'Card', 'Cash', 'Cheque', 'Other'
+  String reference; // transaction UTR, receipt #, etc.
+  String notes;
+
+  PaymentRecord({
+    String? id,
+    required this.amount,
+    DateTime? date,
+    this.method = 'Bank Transfer',
+    this.reference = '',
+    this.notes = '',
+  })  : id = id ?? newId(),
+        date = date ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'amount': amount,
+        'date': date.toIso8601String(),
+        'method': method,
+        'reference': reference,
+        'notes': notes,
+      };
+
+  factory PaymentRecord.fromJson(Map j) => PaymentRecord(
+        id: j['id'],
+        amount: _d(j['amount']),
+        date: _date(j['date']),
+        method: j['method'] ?? 'Bank Transfer',
+        reference: j['reference'] ?? '',
+        notes: j['notes'] ?? '',
+      );
+}
+
+class ServiceItem {
+  String id;
+  String name;
+  String description;
+  double rate;
+  String unit; // 'hr', 'x', 'day', 'project', 'mo', 'page'
+  String category; // 'Development', 'Design', 'Maintenance', 'API', 'Other'
+
+  ServiceItem({
+    String? id,
+    this.name = '',
+    this.description = '',
+    this.rate = 0,
+    this.unit = 'hr',
+    this.category = 'Development',
+  }) : id = id ?? newId();
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'description': description,
+        'rate': rate,
+        'unit': unit,
+        'category': category,
+      };
+
+  factory ServiceItem.fromJson(Map j) => ServiceItem(
+        id: j['id'],
+        name: j['name'] ?? '',
+        description: j['description'] ?? '',
+        rate: _d(j['rate']),
+        unit: j['unit'] ?? 'hr',
+        category: j['category'] ?? 'Development',
+      );
+
+  ServiceItem copy() => ServiceItem.fromJson(toJson());
+}
+
+class TimelineNote {
+  String id;
+  String clientId;
+  String text;
+  String type; // 'note', 'call', 'meeting', 'email', 'follow_up'
+  DateTime date;
+
+  TimelineNote({
+    String? id,
+    required this.clientId,
+    required this.text,
+    this.type = 'note',
+    DateTime? date,
+  })  : id = id ?? newId(),
+        date = date ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'clientId': clientId,
+        'text': text,
+        'type': type,
+        'date': date.toIso8601String(),
+      };
+
+  factory TimelineNote.fromJson(Map j) => TimelineNote(
+        id: j['id'],
+        clientId: j['clientId'] ?? '',
+        text: j['text'] ?? '',
+        type: j['type'] ?? 'note',
+        date: _date(j['date']),
+      );
+}
+
+class FollowUpRecord {
+  String id;
+  String docId;
+  String clientId;
+  DateTime date;
+  String channel; // 'WhatsApp', 'Email', 'Call', 'Message'
+  String notes;
+
+  FollowUpRecord({
+    String? id,
+    required this.docId,
+    required this.clientId,
+    DateTime? date,
+    this.channel = 'WhatsApp',
+    this.notes = '',
+  })  : id = id ?? newId(),
+        date = date ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'docId': docId,
+        'clientId': clientId,
+        'date': date.toIso8601String(),
+        'channel': channel,
+        'notes': notes,
+      };
+
+  factory FollowUpRecord.fromJson(Map j) => FollowUpRecord(
+        id: j['id'],
+        docId: j['docId'] ?? '',
+        clientId: j['clientId'] ?? '',
+        date: _date(j['date']),
+        channel: j['channel'] ?? 'WhatsApp',
+        notes: j['notes'] ?? '',
+      );
+}
+
 /// Invoice and quotation share one shape; [kind] tells them apart.
 class Doc {
   String id, kind, number, clientId, status, notes, title, terms;
@@ -266,6 +411,7 @@ class Doc {
   String template; // id from templates.dart; '' = the kind's default look
   List<DocSection> sections; // quotations: scope, timeline, terms ... printed after the totals
   List<Milestone> schedule; // quotations: when the money is due
+  List<PaymentRecord> payments; // payment records for invoices
   Doc({
     String? id,
     required this.kind,
@@ -285,12 +431,14 @@ class Doc {
     this.template = '',
     List<DocSection>? sections,
     List<Milestone>? schedule,
+    List<PaymentRecord>? payments,
   })  : id = id ?? newId(),
         date = date ?? DateTime.now(),
         due = due ?? DateTime.now().add(const Duration(days: 15)),
         items = items ?? [],
         sections = sections ?? [],
-        schedule = schedule ?? [];
+        schedule = schedule ?? [],
+        payments = payments ?? [];
 
   bool get isInvoice => kind == 'invoice';
   /// Statuses a user can store. 'overdue' is not one of them: it is derived ([overdue]) from 'sent' + a past due date.
@@ -301,8 +449,14 @@ class Doc {
   double get taxable => round2((subtotal - discountAmount).clamp(0, double.infinity).toDouble());
   double get tax => round2(taxable * taxPct / 100);
   double get total => round2(taxable + tax);
+  double get paidAmount {
+    if (payments.isEmpty && status == 'paid') return total;
+    return round2(payments.fold(0.0, (s, p) => s + p.amount));
+  }
+  double get balanceDue => round2((total - paidAmount).clamp(0.0, double.infinity));
+  bool get isPartiallyPaid => isInvoice && paidAmount > 0 && paidAmount < total && status != 'draft';
   /// What to show in a badge: 'overdue' when derived/legacy overdue, otherwise the stored status.
-  String get shownStatus => overdue ? 'overdue' : status;
+  String get shownStatus => overdue ? 'overdue' : (isPartiallyPaid ? 'partially_paid' : status);
   /// Sent and past its due *day* (an invoice due today is not overdue yet). Legacy stored 'overdue' still counts.
   bool get overdue {
     final n = DateTime.now();
@@ -328,6 +482,7 @@ class Doc {
         'template': template,
         'sections': sections.map((x) => x.toJson()).toList(),
         'schedule': schedule.map((x) => x.toJson()).toList(),
+        'payments': payments.map((p) => p.toJson()).toList(),
       };
 
   factory Doc.fromJson(Map j) => Doc(
@@ -349,6 +504,7 @@ class Doc {
         template: j['template'] ?? '',
         sections: [for (final x in j['sections'] ?? []) DocSection.fromJson(x)],
         schedule: [for (final x in j['schedule'] ?? []) Milestone.fromJson(x)],
+        payments: [for (final p in j['payments'] ?? []) PaymentRecord.fromJson(p)],
       );
 
   Doc copy() => Doc.fromJson(toJson());
@@ -466,9 +622,23 @@ class Store extends ChangeNotifier {
   List<Doc> docs = [];
   Profile profile = Profile();
   List<Activity> activity = [];
+  List<ServiceItem> services = [];
+  List<TimelineNote> timelineNotes = [];
+  List<FollowUpRecord> followUps = [];
   File? _file;
   Future<void> _writing = Future.value();
   Timer? _debounce;
+
+  void _initDefaultServicesIfEmpty() {
+    if (services.isEmpty) {
+      services = [
+        ServiceItem(name: 'Frontend Development', rate: 3500, unit: 'hr', category: 'Development', description: 'Flutter, React and responsive web interface development'),
+        ServiceItem(name: 'UI / UX Design', rate: 2500, unit: 'hr', category: 'Design', description: 'Wireframes, interactive Figma prototypes and design systems'),
+        ServiceItem(name: 'API Integration', rate: 20000, unit: 'project', category: 'Development', description: 'REST / GraphQL endpoints, webhook handling and testing'),
+        ServiceItem(name: 'Monthly Maintenance', rate: 15000, unit: 'mo', category: 'Maintenance', description: 'Bug fixes, performance audits, backups and framework upgrades'),
+      ];
+    }
+  }
 
   Future<void> load() async {
     _file = File('${(await getApplicationDocumentsDirectory()).path}/freelance_os.json');
@@ -482,6 +652,9 @@ class Store extends ChangeNotifier {
         docs = [for (final d in j['docs'] ?? []) Doc.fromJson(d)];
         profile = Profile.fromJson(j['profile'] ?? {});
         activity = [for (final a in j['activity'] ?? []) Activity.fromJson(a)];
+        services = [for (final s in j['services'] ?? []) ServiceItem.fromJson(s)];
+        timelineNotes = [for (final n in j['timelineNotes'] ?? []) TimelineNote.fromJson(n)];
+        followUps = [for (final f in j['followUps'] ?? []) FollowUpRecord.fromJson(f)];
         rev = (j['rev'] as num?)?.toInt() ?? 0;
         Log.db('read   freelance_os.json  ${_kb(text.length)}  ${clients.length} clients, ${projects.length} projects, ${docs.length} docs  ${sw.elapsedMilliseconds} ms');
       } catch (e) {
@@ -490,6 +663,7 @@ class Store extends ChangeNotifier {
     } else {
       Log.db('read   no database file yet, starting empty');
     }
+    _initDefaultServicesIfEmpty();
     _purgeDemoData();
     baseline();
   }
@@ -598,6 +772,9 @@ class Store extends ChangeNotifier {
         'docs': docs.map((d) => d.toJson()).toList(),
         'profile': profile.toJson(),
         'activity': activity.map((a) => a.toJson()).toList(),
+        'services': services.map((s) => s.toJson()).toList(),
+        'timelineNotes': timelineNotes.map((n) => n.toJson()).toList(),
+        'followUps': followUps.map((f) => f.toJson()).toList(),
       });
 
   /// Replaces everything with a backup. Returns null on success, or a human-readable reason it was rejected (nothing is changed then).
@@ -611,11 +788,18 @@ class Store extends ChangeNotifier {
       final d = [for (final x in j['docs']) Doc.fromJson(x)];
       final pr = Profile.fromJson(j['profile'] ?? {});
       final a = [for (final x in j['activity'] ?? []) Activity.fromJson(x)];
+      final sv = [for (final x in j['services'] ?? []) ServiceItem.fromJson(x)];
+      final tn = [for (final x in j['timelineNotes'] ?? []) TimelineNote.fromJson(x)];
+      final fu = [for (final x in j['followUps'] ?? []) FollowUpRecord.fromJson(x)];
       clients = c;
       projects = p;
       docs = d;
       profile = pr;
       activity = a;
+      services = sv;
+      timelineNotes = tn;
+      followUps = fu;
+      _initDefaultServicesIfEmpty();
     } catch (_) {
       return 'The file is damaged or from a different app.';
     }
@@ -940,4 +1124,69 @@ class Store extends ChangeNotifier {
   double get pipeline => docs.where((d) => !d.isInvoice && d.status == 'sent').fold(0, (s, d) => s + d.total);
   int get overdueCount => docs.where((d) => d.overdue).length;
   double billedTo(String clientId) => invoices.where((d) => d.clientId == clientId).fold(0, (s, d) => s + d.total);
+
+  // ---- Service catalogue methods
+  void putService(ServiceItem item) {
+    Log.db('upsert service ${item.name}');
+    _upsert(services, item, (x) => x.id);
+  }
+
+  void deleteService(String id) {
+    Log.db('delete service $id');
+    services.removeWhere((s) => s.id == id);
+    save();
+  }
+
+  // ---- Client timeline & communication notes
+  void addTimelineNote(TimelineNote note) {
+    Log.db('insert timeline note for client ${note.clientId}');
+    timelineNotes.insert(0, note);
+    _log('Note logged for ${clientName(note.clientId)}', 'info');
+    save();
+  }
+
+  void deleteTimelineNote(String id) {
+    Log.db('delete timeline note $id');
+    timelineNotes.removeWhere((n) => n.id == id);
+    save();
+  }
+
+  List<TimelineNote> timelineNotesFor(String clientId) =>
+      timelineNotes.where((n) => n.clientId == clientId).toList()..sort((a, b) => b.date.compareTo(a.date));
+
+  // ---- Follow-up reminders
+  void addFollowUp(FollowUpRecord f) {
+    Log.db('log follow up for doc ${f.docId}');
+    followUps.insert(0, f);
+    final d = doc(f.docId);
+    _log('Follow-up logged for ${d?.number ?? 'document'} via ${f.channel}', 'info');
+    save();
+  }
+
+  List<FollowUpRecord> followUpsFor(String docId) =>
+      followUps.where((f) => f.docId == docId).toList()..sort((a, b) => b.date.compareTo(a.date));
+
+  // ---- Payment tracking
+  void recordPayment(String docId, PaymentRecord payment) {
+    Log.db('record payment for doc $docId: ${payment.amount}');
+    final d = doc(docId);
+    if (d == null) return;
+    d.payments.insert(0, payment);
+    if (d.paidAmount >= d.total) {
+      d.status = 'paid';
+    }
+    _log('${d.number} payment of ${money(payment.amount)} via ${payment.method} recorded', 'good');
+    save();
+  }
+
+  void deletePayment(String docId, String paymentId) {
+    Log.db('delete payment $paymentId on doc $docId');
+    final d = doc(docId);
+    if (d == null) return;
+    d.payments.removeWhere((p) => p.id == paymentId);
+    if (d.status == 'paid' && d.paidAmount < d.total) {
+      d.status = 'sent';
+    }
+    save();
+  }
 }

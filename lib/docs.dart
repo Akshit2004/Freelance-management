@@ -7,10 +7,13 @@ import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'builder_widgets.dart';
+import 'builders.dart';
 import 'clients.dart';
 import 'models.dart';
 import 'motion.dart';
 import 'pdf.dart';
+import 'templates.dart';
 import 'ui.dart';
 
 // ---------------------------------------------------------------- shared helpers
@@ -117,7 +120,7 @@ class _Btn extends StatelessWidget {
   final VoidCallback? onTap;
   final IconData? icon;
   final Color? fill, fg, outline;
-  const _Btn(this.label, this.onTap, {this.icon, this.fill, this.fg, this.outline});
+  const _Btn(this.label, this.onTap, {super.key, this.icon, this.fill, this.fg, this.outline});
 
   @override
   Widget build(BuildContext context) {
@@ -212,10 +215,7 @@ class _DocsTabState extends State<DocsTab> {
     return q.split(RegExp(r'\s+')).every(hay.contains);
   }
 
-  void _create(BuildContext context) {
-    final doc = context.read<Store>().newDoc(quotes ? 'quote' : 'invoice');
-    Navigator.push(context, zoom(DocEditor(doc, isNew: true)));
-  }
+  void _create(BuildContext context) => Navigator.push(context, zoom(quotes ? const QuoteBuilderPage() : const InvoiceBuilderPage()));
 
   @override
   Widget build(BuildContext context) {
@@ -627,6 +627,7 @@ class _DocDetailPageState extends State<DocDetailPage> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     StatusPill(doc.shownStatus),
+                    Text(templateOf(doc).name.toUpperCase(), key: const Key('doc-template-name'), style: mono(10, color: C.dim, letterSpacing: .8)),
                     if (doc.overdue && overdueDays > 0)
                       Text('$overdueDays ${overdueDays == 1 ? 'day' : 'days'} past due',
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.redText)),
@@ -742,7 +743,8 @@ class _DocDetailPageState extends State<DocDetailPage> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          if (doc.schedule.isNotEmpty || doc.sections.isNotEmpty) ...[const SizedBox(height: 14), DocExtrasView(doc)],
+          const SizedBox(height: 2),
           if (canConvert)
             Semantics(
               button: true,
@@ -1135,6 +1137,23 @@ class _DocEditorState extends State<DocEditor> {
     if (days != null) d.due = d.date.add(Duration(days: days));
   }
 
+  /// Adds lines made from the project's deliverables (a billed invoice line keeps a link back to its deliverable).
+  Future<void> _fromDeliverables() async {
+    final pid = d.projectId;
+    if (pid == null) return;
+    final rate = context.read<Store>().profile.hourlyRate;
+    final picked = await pickDeliverables(context,
+        projectId: pid, used: {for (final i in d.items) if (i.todoId != null) i.todoId!}, preselect: d.isInvoice ? (t) => t.done : null, confirmLabel: 'Add');
+    if (picked == null || !mounted) return;
+    setState(() {
+      for (final t in picked) {
+        final c = _ItemCtl(lineForDeliverable(t, rate));
+        d.items.add(c.item);
+        _items.add(c);
+      }
+    });
+  }
+
   Future<void> _newClient() async {
     final created = await Navigator.push<Object?>(context, zoom(ClientEdit(Client(), isNew: true)));
     if (!mounted) return;
@@ -1478,6 +1497,9 @@ class _DocEditorState extends State<DocEditor> {
                   ],
                 ),
               ),
+            _label('Template'),
+            TemplatePicker(kind: d.kind, selected: d.template, onChanged: (v) => setState(() => d.template = v)),
+            const SizedBox(height: 14),
             _tf('Title / subject', title, hint: 'e.g. Menu illustrations', cap: TextCapitalization.sentences),
             _tf('Number', number, error: _e(_numberErr(s)), key: _numberKey, maxLength: 24),
             Row(
@@ -1575,6 +1597,11 @@ class _DocEditorState extends State<DocEditor> {
               ),
             for (final (i, c) in _items.indexed) _itemCard(i, c, cur),
             _Btn('Add line item', _addItem, icon: Icons.add_rounded, outline: C.border),
+            if (d.projectId != null) ...[
+              const SizedBox(height: 8),
+              _Btn('Add from deliverables', _fromDeliverables, icon: Icons.checklist_rounded, outline: C.border, key: const Key('editor-from-deliverables')),
+            ],
+            if (!isInv) ...[const SizedBox(height: 18), QuoteExtrasEditor(d, onChanged: _touch)],
             const SizedBox(height: 18),
             _tf('Notes', notes, hint: 'Shown on the PDF, e.g. payment instructions', cap: TextCapitalization.sentences, maxLines: 5, action: TextInputAction.newline),
             CardContainer(

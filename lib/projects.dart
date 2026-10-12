@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 import 'ai.dart';
+import 'builders.dart';
 import 'clients.dart';
 import 'docs.dart';
 import 'models.dart';
@@ -395,35 +396,7 @@ class ProjectDetailPage extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ---- deliverables
-          _SectionRow(
-            'Deliverables',
-            count: pr.totalTasksCount == 0 ? null : '${pr.doneTasksCount}/${pr.totalTasksCount}',
-            action: _MiniButton('Add', Icons.add_rounded, () => _taskSheet(context, pr.id), key: const Key('add-task')),
-          ),
-          const SizedBox(height: 8),
-          CardContainer(
-            padding: EdgeInsets.zero,
-            radius: 18,
-            child: pr.todos.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Center(
-                        child: Text('No deliverables yet. Tap Add, or let the AI estimate suggest them.',
-                            textAlign: TextAlign.center, style: TextStyle(color: C.muted))),
-                  )
-                : Column(
-                    children: [
-                      for (var idx = 0; idx < pr.todos.length; idx++) ...[
-                        if (idx > 0) const Divider(height: 1, thickness: 1, color: C.border),
-                        _TaskRow(
-                          todo: pr.todos[idx],
-                          onToggle: () => context.read<Store>().toggleTodo(pr.id, pr.todos[idx].id),
-                          onEdit: () => _taskDetail(context, pr.id, pr.todos[idx].id),
-                        ),
-                      ],
-                    ],
-                  ),
-          ),
+          _Deliverables(pr.id),
           const SizedBox(height: 24),
 
           // ---- money
@@ -492,8 +465,9 @@ class ProjectDetailPage extends StatelessWidget {
     );
   }
 
-  void _newDoc(BuildContext context, Project pr, String kind) =>
-      Navigator.push(context, zoom(DocEditor(context.read<Store>().newDoc(kind, clientId: pr.clientId, projectId: pr.id), isNew: true)));
+  void _newDoc(BuildContext context, Project pr, String kind) => Navigator.push(
+      context,
+      zoom(kind == 'invoice' ? InvoiceBuilderPage(clientId: pr.clientId, projectId: pr.id) : QuoteBuilderPage(clientId: pr.clientId, projectId: pr.id)));
 }
 
 /// Reads the project's title and description with the on-device model, shows its budget / hours / deliverables, and saves them on approval.
@@ -638,15 +612,12 @@ class _Legend extends StatelessWidget {
 class _SectionRow extends StatelessWidget {
   final String title;
   final String? count;
-  final Widget? action;
-  const _SectionRow(this.title, {this.count, this.action});
+  const _SectionRow(this.title, {this.count});
 
   @override
   Widget build(BuildContext context) => Row(children: [
         Flexible(child: Text(title, style: display(18), maxLines: 1, overflow: TextOverflow.ellipsis)),
         if (count != null) ...[const SizedBox(width: 8), Text(count!, style: mono(11, color: C.muted))],
-        const Spacer(),
-        ?action,
       ]);
 }
 
@@ -713,6 +684,214 @@ class _DocRow extends StatelessWidget {
 
 // ------------------------------------------------------------------------------------------------------------ tasks
 
+/// The project's deliverables: add one, bulk add many from typed lines, or select several and remove them together.
+/// Each row shows which quotations and invoices it appears on.
+class _Deliverables extends StatefulWidget {
+  final String projectId;
+  const _Deliverables(this.projectId);
+
+  @override
+  State<_Deliverables> createState() => _DeliverablesState();
+}
+
+class _DeliverablesState extends State<_Deliverables> {
+  bool selecting = false;
+  final picked = <String>{};
+
+  Future<void> _deleteSelected() async {
+    final s = context.read<Store>();
+    final onDocs = picked.where((id) => s.quotedIn(id).isNotEmpty).length;
+    final ok = await confirm(
+      context,
+      'Delete ${picked.length} ${picked.length == 1 ? 'deliverable' : 'deliverables'}?',
+      'They and their subtasks will be removed from the project.${onDocs == 0 ? '' : '\n\n$onDocs of them appear on a quotation or invoice. Those documents keep their lines.'}',
+    );
+    if (!ok || !mounted) return;
+    final n = picked.length;
+    s.deleteTodos(widget.projectId, {...picked});
+    setState(() {
+      picked.clear();
+      selecting = false;
+    });
+    toast(context, 'Deleted $n ${n == 1 ? 'deliverable' : 'deliverables'}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<Store>();
+    final pr = s.project(widget.projectId);
+    if (pr == null) return const SizedBox.shrink();
+    final ids = [for (final t in pr.todos) t.id];
+    picked.removeWhere((id) => !ids.contains(id)); // a deliverable removed elsewhere can't stay selected
+    final all = ids.isNotEmpty && picked.length == ids.length;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (selecting)
+        Row(children: [
+          Expanded(child: Text('${picked.length} selected', key: const Key('select-count'), style: display(18))),
+          TextButton(
+            key: const Key('select-all'),
+            onPressed: () => setState(() => all ? picked.clear() : picked.addAll(ids)),
+            child: Text(all ? 'None' : 'All', style: const TextStyle(fontWeight: FontWeight.w700, color: C.orangeDark)),
+          ),
+          TextButton(
+            key: const Key('select-cancel'),
+            onPressed: () => setState(() {
+              selecting = false;
+              picked.clear();
+            }),
+            child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700, color: C.muted)),
+          ),
+        ])
+      else ...[
+        _SectionRow('Deliverables', count: pr.totalTasksCount == 0 ? null : '${pr.doneTasksCount}/${pr.totalTasksCount}'),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          _MiniButton('Add', Icons.add_rounded, () => _taskSheet(context, pr.id), key: const Key('add-task')),
+          _MiniButton('Bulk add', Icons.playlist_add_rounded, () => _bulkAddSheet(context, pr.id), key: const Key('bulk-add')),
+          if (pr.todos.isNotEmpty) _MiniButton('Select', Icons.checklist_rounded, () => setState(() => selecting = true), key: const Key('select-tasks')),
+        ]),
+      ],
+      const SizedBox(height: 8),
+      CardContainer(
+        padding: EdgeInsets.zero,
+        radius: 18,
+        child: pr.todos.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(
+                    child: Text('No deliverables yet. Tap Add, paste a list with Bulk add, or let the AI estimate suggest them.',
+                        textAlign: TextAlign.center, style: TextStyle(color: C.muted))),
+              )
+            : Column(
+                children: [
+                  for (var idx = 0; idx < pr.todos.length; idx++) ...[
+                    if (idx > 0) const Divider(height: 1, thickness: 1, color: C.border),
+                    _TaskRow(
+                      todo: pr.todos[idx],
+                      docs: s.quotedIn(pr.todos[idx].id),
+                      selecting: selecting,
+                      picked: picked.contains(pr.todos[idx].id),
+                      onToggle: () => context.read<Store>().toggleTodo(pr.id, pr.todos[idx].id),
+                      onEdit: selecting
+                          ? () => setState(() => picked.contains(pr.todos[idx].id) ? picked.remove(pr.todos[idx].id) : picked.add(pr.todos[idx].id))
+                          : () => _taskDetail(context, pr.id, pr.todos[idx].id),
+                    ),
+                  ],
+                ],
+              ),
+      ),
+      if (selecting && picked.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        Pressable(
+          onTap: _deleteSelected,
+          child: Container(
+            key: const Key('select-delete'),
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: C.red, borderRadius: BorderRadius.circular(16)),
+            child: Text('Delete ${picked.length} ${picked.length == 1 ? 'deliverable' : 'deliverables'}',
+                style: const TextStyle(color: Colors.white, fontFamily: 'Grotesk', fontWeight: FontWeight.w700, fontSize: 15)),
+          ),
+        ),
+      ],
+    ]);
+  }
+}
+
+/// Bulk add: type or paste one deliverable per line.
+Future<void> _bulkAddSheet(BuildContext context, String projectId) => showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: C.card,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => _BulkAdd(projectId),
+    );
+
+class _BulkAdd extends StatefulWidget {
+  final String projectId;
+  const _BulkAdd(this.projectId);
+
+  @override
+  State<_BulkAdd> createState() => _BulkAddState();
+}
+
+class _BulkAddState extends State<_BulkAdd> {
+  final text = TextEditingController();
+
+  @override
+  void dispose() {
+    text.dispose();
+    super.dispose();
+  }
+
+  void _add(List<Todo> todos) {
+    context.read<Store>().addTodos(widget.projectId, todos);
+    Navigator.pop(context);
+    toast(context, 'Added ${todos.length} ${todos.length == 1 ? 'deliverable' : 'deliverables'}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final todos = ProjectEstimate.parseTasks(text.text);
+    final subs = todos.fold(0, (a, t) => a + t.sub.length);
+    final hours = Project(todos: todos).hoursEstimate;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('Bulk add deliverables', style: display(20)),
+          const SizedBox(height: 6),
+          const Text(
+            'One deliverable per line. Add its hours after a bar: Design homepage | 8. Start a line with - to make it a subtask of the line above.',
+            style: TextStyle(fontSize: 12.5, color: C.muted, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('bulk-text'),
+            controller: text,
+            autofocus: true,
+            minLines: 6,
+            maxLines: 12,
+            keyboardType: TextInputType.multiline,
+            textCapitalization: TextCapitalization.sentences,
+            onChanged: (_) => setState(() {}),
+            style: const TextStyle(fontFamily: 'Grotesk', fontSize: 15, color: C.text),
+            decoration: InputDecoration(
+              hintText: 'Staff management | 40\n- Staff profiles | 16\n- Attendance | 14\nInventory | 30\nInvoicing',
+              hintStyle: const TextStyle(color: C.dim, fontSize: 14, height: 1.4),
+              filled: true,
+              fillColor: C.bg,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: C.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: C.border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: C.dark, width: 1.5)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            todos.isEmpty ? 'Nothing to add yet.' : '${todos.length} ${todos.length == 1 ? 'deliverable' : 'deliverables'}${subs == 0 ? '' : ', $subs subtasks'}${hours > 0 ? ', ${Todo.fmtHours(hours)}' : ''}',
+            key: const Key('bulk-summary'),
+            style: mono(12, color: C.muted),
+          ),
+          const SizedBox(height: 14),
+          Pressable(
+            onTap: todos.isEmpty ? null : () => _add(todos),
+            child: Container(
+              key: const Key('bulk-confirm'),
+              height: 52,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: todos.isEmpty ? C.dimLight : C.dark, borderRadius: BorderRadius.circular(16)),
+              child: Text(todos.isEmpty ? 'Add' : 'Add ${todos.length} ${todos.length == 1 ? 'deliverable' : 'deliverables'}',
+                  style: const TextStyle(color: C.textLight, fontFamily: 'Grotesk', fontWeight: FontWeight.w700, fontSize: 16)),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
 String _priLabel(String p) => switch (p) { 'high' => 'High', 'low' => 'Low', _ => 'Medium' };
 
 /// A deliverable's total hours: its subtasks' hours, or its own when it has none (same rule as the project total).
@@ -721,18 +900,37 @@ String _hoursOf(Todo t) => t.sub.isEmpty ? t.hours.trim() : Todo.fmtHours(Projec
 class _TaskRow extends StatelessWidget {
   final Todo todo;
   final bool isSub;
+  final bool selecting, picked; // bulk-select mode: the circle becomes a checkbox and a tap picks the row
+  final List<String> docs; // quotations and invoices this deliverable appears on
   final VoidCallback onToggle, onEdit; // onEdit: a deliverable opens its detail sheet, a subtask its edit sheet
-  const _TaskRow({required this.todo, this.isSub = false, required this.onToggle, required this.onEdit});
+  const _TaskRow({required this.todo, this.isSub = false, this.selecting = false, this.picked = false, this.docs = const [], required this.onToggle, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
     final hours = _hoursOf(todo);
     final subs = todo.sub.isEmpty ? '' : '${todo.sub.where((s) => s.done).length}/${todo.sub.length} subtasks';
-    final hasTag = hours.isNotEmpty || subs.isNotEmpty || (todo.priority == 'high' || todo.priority == 'low');
+    final hasTag = hours.isNotEmpty || subs.isNotEmpty || docs.isNotEmpty || (todo.priority == 'high' || todo.priority == 'low');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(width: isSub ? 22 : 4),
+        if (selecting)
+          Semantics(
+            checked: picked,
+            label: 'Select ${todo.text}',
+            onTap: onEdit,
+            excludeSemantics: true,
+            child: Pressable(
+              onTap: onEdit,
+              child: SizedBox(
+                key: Key('select-${todo.id}'),
+                width: 44,
+                height: 48,
+                child: Icon(picked ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded, size: 24, color: picked ? C.orange : C.dim),
+              ),
+            ),
+          )
+        else
         Semantics(
           checked: todo.done,
           label: todo.text,
@@ -792,6 +990,7 @@ class _TaskRow extends StatelessWidget {
                         Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
                           if (hours.isNotEmpty) Text(hours, style: mono(11, color: C.muted)),
                           if (subs.isNotEmpty) Text(subs, style: mono(11, color: C.muted)),
+                          if (docs.isNotEmpty) Text('In ${docs.join(', ')}', key: Key('docs-${todo.id}'), style: mono(11, color: C.blueText)),
                           if (todo.priority == 'high') _PriTag('High', C.redText, C.redLight),
                           if (todo.priority == 'low') _PriTag('Low', C.muted, C.chipLight),
                         ]),
